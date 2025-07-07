@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Latino College Study</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <h1>Latino College Study</h1>
+
+  <div id="nav">
+    <button onclick="setScene(0)">Enrollment Over Time</button>
+    <button onclick="setScene(1)">Graduation Rates</button>
+    <button onclick="setScene(2)">Explore More</button>
+  </div>
+
+  <div id="chart"></div>
+
+  <script>
+    let currentScene = 0;
+
+    function setScene(scene) {
+      currentScene = scene;
+      d3.select("#chart").html("");
+
+      if (scene === 0) drawEnrollment();
+      else if (scene === 1) drawGraduation();
+      else if (scene === 2) drawExplore();
+    }
+
+    function drawEnrollment() {
+      d3.csv("data/enrollment.csv").then(data => {
+        data.forEach(d => {
+          d.Year = +d.Year;
+          d.Latino = +d.Latino;
+        });
+
+        const margin = {top: 30, right: 30, bottom: 50, left: 60},
+              width = 800 - margin.left - margin.right,
+              height = 400 - margin.top - margin.bottom;
+
+        const svg = d3.select("#chart")
+          .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const x = d3.scaleLinear()
+          .domain(d3.extent(data, d => d.Year))
+          .range([0, width]);
+
+        const y = d3.scaleLinear()
+          .domain([0, d3.max(data, d => d.Latino)]).nice()
+          .range([height, 0]);
+
+        svg.append("g").call(d3.axisLeft(y));
+        svg.append("g")
+          .attr("transform", `translate(0,${height})`)
+          .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
+        svg.append("path")
+          .datum(data)
+          .attr("fill", "none")
+          .attr("stroke", "steelblue")
+          .attr("stroke-width", 2)
+          .attr("d", d3.line()
+            .x(d => x(d.Year))
+            .y(d => y(d.Latino))
+          );
+
+        svg.append("text")
+          .attr("x", width / 2)
+          .attr("y", -10)
+          .attr("text-anchor", "middle")
+          .style("font-size", "16px")
+          .text("Latino Enrollment Over Time");
+      });
+    }
+
+    function drawGraduation() {
+      d3.csv("data/graduation_rates.csv").then(data => {
+        data.forEach(d => d.GraduationRate = +d.GraduationRate);
+
+        const margin = {top: 30, right: 30, bottom: 50, left: 60},
+              width = 800 - margin.left - margin.right,
+              height = 400 - margin.top - margin.bottom;
+
+        const svg = d3.select("#chart")
+          .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const x = d3.scaleBand()
+          .domain(data.map(d => d.Ethnicity))
+          .range([0, width])
+          .padding(0.2);
+
+        const y = d3.scaleLinear()
+          .domain([0, 100])
+          .range([height, 0]);
+
+        svg.append("g")
+          .attr("transform", `translate(0,${height})`)
+          .call(d3.axisBottom(x));
+
+        svg.append("g").call(d3.axisLeft(y));
+
+        svg.selectAll("rect")
+          .data(data)
+          .enter()
+          .append("rect")
+          .attr("x", d => x(d.Ethnicity))
+          .attr("width", x.bandwidth())
+          .attr("y", d => y(d.GraduationRate))
+          .attr("height", d => height - y(d.GraduationRate))
+          .attr("fill", "tomato");
+
+        svg.append("text")
+          .attr("x", width / 2)
+          .attr("y", -10)
+          .attr("text-anchor", "middle")
+          .style("font-size", "16px")
+          .text("Graduation Rates by Ethnicity");
+      });
+    }
+
+    function drawExplore() {
+      d3.select("#chart").append("p")
+        .text("Interactive exploration coming soon...");
+    }
+
+    setScene(0);
+  </script>
+</body>
+</html>
