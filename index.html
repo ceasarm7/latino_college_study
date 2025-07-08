@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Latino College Study</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <h1>Latino College Study</h1>
+
+  <div id="nav">
+    <button onclick="setScene(0)">Enrollment Over Time</button>
+    <button onclick="setScene(1)">Graduation Rates</button>
+    <button onclick="setScene(2)">Explore More</button>
+  </div>
+
+  <div id="chart"></div>
+
+  <script>
+    let currentScene = 0;
+
+    function setScene(scene) {
+      currentScene = scene;
+      d3.select("#chart").html("");
+
+      if (scene === 0) drawEnrollment();
+      else if (scene === 1) drawGraduation();
+      else if (scene === 2) drawExplore();
+    }
+
+    function drawEnrollment() {
+      d3.csv("data/enrollment.csv").then(data => {
+        data.forEach(d => {
+          d.Year = +d.Year;
+          d.Latino = +d.Latino;
+        });
+
+        const margin = {top: 30, right: 30, bottom: 50, left: 60},
+              width = 800 - margin.left - margin.right,
+              height = 400 - margin.top - margin.bottom;
+
+        const svg = d3.select("#chart")
+          .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const x = d3.scaleLinear()
+          .domain(d3.extent(data, d => d.Year))
+          .range([0, width]);
+
+        const y = d3.scaleLinear()
+          .domain([0, d3.max(data, d => d.Latino)]).nice()
+          .range([height, 0]);
+
+        svg.append("g").call(d3.axisLeft(y));
+        svg.append("g")
+          .attr("transform", `translate(0,${height})`)
+          .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
+        svg.append("path")
+          .datum(data)
+          .attr("fill", "none")
+          .attr("stroke", "steelblue")
+          .attr("stroke-width", 2)
+          .attr("d", d3.line()
+            .x(d => x(d.Year))
+            .y(d => y(d.Latino))
+          );
+
+        svg.append("text")
+          .attr("x", width / 2)
+          .attr("y", -10)
+          .attr("text-anchor", "middle")
+          .style("font-size", "16px")
+          .text("Latino Enrollment Over Time");
+      });
+    }
+
+    function drawGraduation() {
+      d3.csv("data/graduation_rates.csv").then(data => {
+        data.forEach(d => d.GraduationRate = +d.GraduationRate);
+
+        const margin = {top: 30, right: 30, bottom: 50, left: 60},
+              width = 800 - margin.left - margin.right,
+              height = 400 - margin.top - margin.bottom;
+
+        const svg = d3.select("#chart")
+          .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const x = d3.scaleBand()
+          .domain(data.map(d => d.Ethnicity))
+          .range([0, width])
+          .padding(0.2);
+
+        const y = d3.scaleLinear()
+          .domain([0, 100])
+          .range([height, 0]);
+
+        svg.append("g")
+          .attr("transform", `translate(0,${height})`)
+          .call(d3.axisBottom(x));
+
+        svg.append("g").call(d3.axisLeft(y));
+
+        svg.selectAll("rect")
+          .data(data)
+          .enter()
+          .append("rect")
+          .attr("x", d => x(d.Ethnicity))
+          .attr("width", x.bandwidth())
+          .attr("y", d => y(d.GraduationRate))
+          .attr("height", d => height - y(d.GraduationRate))
+          .attr("fill", "tomato");
+
+        svg.append("text")
+          .attr("x", width / 2)
+          .attr("y", -10)
+          .attr("text-anchor", "middle")
+          .style("font-size", "16px")
+          .text("Graduation Rates by Ethnicity");
+      });
+    }
+
+   function drawExplore() {
+    d3.csv("data/enrollment.csv").then(data => {
+      data.forEach(d => {
+        d.Year = +d.Year;
+        d.Latino = +d.Latino;
+        d.White = +d.White;
+        d.Black = +d.Black;
+      });
+
+      const keys = Object.keys(data[0]).filter(k => k !== "Year");
+
+      // Dropdown
+      const dropdown = d3.select("#chart")
+        .append("div")
+        .attr("id", "controls")
+        .append("select")
+        .on("change", function () {
+          updateChart(this.value);
+        });
+
+      dropdown.selectAll("option")
+        .data(keys)
+        .enter()
+        .append("option")
+        .text(d => d);
+  
+      const margin = {top: 60, right: 30, bottom: 60, left: 70},
+            width = 800 - margin.left - margin.right,
+            height = 400 - margin.top - margin.bottom;
+  
+      const svg = d3.select("#chart")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+  
+      const title = svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", -30)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px");
+  
+      const x = d3.scaleBand()
+        .domain(data.map(d => d.Year))
+        .range([0, width])
+        .padding(0.1);
+  
+      const y = d3.scaleLinear().range([height, 0]);
+  
+      svg.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", `translate(0,${height})`);
+  
+      svg.append("g")
+        .attr("class", "y-axis");
+  
+      // X-axis label
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width / 2)
+        .attr("y", height + 40)
+        .text("Year");
+  
+      // Y-axis label
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -50)
+        .text("Enrollment Count");
+  
+      function updateChart(category) {
+        y.domain([0, d3.max(data, d => d[category])]).nice();
+  
+        svg.select(".y-axis")
+          .transition().duration(500)
+          .call(d3.axisLeft(y));
+  
+        svg.select(".x-axis")
+          .transition().duration(500)
+          .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+  
+        const bars = svg.selectAll("rect").data(data, d => d.Year);
+  
+        bars.enter()
+          .append("rect")
+          .merge(bars)
+          .transition()
+          .duration(500)
+          .attr("x", d => x(d.Year))
+          .attr("y", d => y(d[category]))
+          .attr("width", x.bandwidth())
+          .attr("height", d => height - y(d[category]))
+          .attr("fill", "#4caf50");
+  
+        bars.exit().remove();
+  
+        // Update chart title
+        title.text(`Enrollment Over Time – ${category} Students`);
+      }
+  
+      updateChart("Latino");
+    });
+  }
+
+    setScene(0);
+  </script>
+</body>
+</html>
+
