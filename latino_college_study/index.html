@@ -129,77 +129,111 @@
       });
     }
 
-    function drawExplore() {
-      d3.csv("data/enrollment.csv").then(data => {
-        data.forEach(d => {
-          d.Year = +d.Year;
-          d.Latino = +d.Latino;
-          d.White = +d.White;
-          d.Black = +d.Black;
+   function drawExplore() {
+    d3.csv("data/enrollment.csv").then(data => {
+      data.forEach(d => {
+        d.Year = +d.Year;
+        d.Latino = +d.Latino;
+        d.White = +d.White;
+        d.Black = +d.Black;
+      });
+
+      const keys = Object.keys(data[0]).filter(k => k !== "Year");
+
+      // Dropdown
+      const dropdown = d3.select("#chart")
+        .append("div")
+        .attr("id", "controls")
+        .append("select")
+        .on("change", function () {
+          updateChart(this.value);
         });
 
-        const keys = Object.keys(data[0]).filter(k => k !== "Year");
-
-        const dropdown = d3.select("#chart")
-          .append("div")
-          .attr("id", "controls")
-          .append("select")
-          .on("change", function () {
-            updateChart(this.value);
-          });
-
-        dropdown.selectAll("option")
-          .data(keys)
-          .enter()
-          .append("option")
-          .text(d => d);
-
-        const margin = {top: 30, right: 30, bottom: 50, left: 60},
-              width = 800 - margin.left - margin.right,
-              height = 400 - margin.top - margin.bottom;
-
-        const svg = d3.select("#chart")
-          .append("svg")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height + margin.top + margin.bottom)
-          .append("g")
-          .attr("transform", `translate(${margin.left},${margin.top})`);
-
-        const x = d3.scaleBand()
-          .domain(data.map(d => d.Year))
-          .range([0, width])
-          .padding(0.1);
-
-        const y = d3.scaleLinear().range([height, 0]);
-
-        svg.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`);
-        svg.append("g").attr("class", "y-axis");
-
-        function updateChart(category) {
-          y.domain([0, d3.max(data, d => d[category])]).nice();
-
-          svg.select(".y-axis").transition().duration(500).call(d3.axisLeft(y));
-          svg.select(".x-axis").transition().duration(500).call(d3.axisBottom(x).tickFormat(d3.format("d")));
-
-          const bars = svg.selectAll("rect").data(data, d => d.Year);
-
-          bars.enter()
-            .append("rect")
-            .merge(bars)
-            .transition()
-            .duration(500)
-            .attr("x", d => x(d.Year))
-            .attr("y", d => y(d[category]))
-            .attr("width", x.bandwidth())
-            .attr("height", d => height - y(d[category]))
-            .attr("fill", "#4caf50");
-
-          bars.exit().remove();
-        }
-
-        updateChart("Latino");
-      });
-    }
+      dropdown.selectAll("option")
+        .data(keys)
+        .enter()
+        .append("option")
+        .text(d => d);
+  
+      const margin = {top: 60, right: 30, bottom: 60, left: 70},
+            width = 800 - margin.left - margin.right,
+            height = 400 - margin.top - margin.bottom;
+  
+      const svg = d3.select("#chart")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+  
+      const title = svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", -30)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px");
+  
+      const x = d3.scaleBand()
+        .domain(data.map(d => d.Year))
+        .range([0, width])
+        .padding(0.1);
+  
+      const y = d3.scaleLinear().range([height, 0]);
+  
+      svg.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", `translate(0,${height})`);
+  
+      svg.append("g")
+        .attr("class", "y-axis");
+  
+      // X-axis label
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width / 2)
+        .attr("y", height + 40)
+        .text("Year");
+  
+      // Y-axis label
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -50)
+        .text("Enrollment Count");
+  
+      function updateChart(category) {
+        y.domain([0, d3.max(data, d => d[category])]).nice();
+  
+        svg.select(".y-axis")
+          .transition().duration(500)
+          .call(d3.axisLeft(y));
+  
+        svg.select(".x-axis")
+          .transition().duration(500)
+          .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+  
+        const bars = svg.selectAll("rect").data(data, d => d.Year);
+  
+        bars.enter()
+          .append("rect")
+          .merge(bars)
+          .transition()
+          .duration(500)
+          .attr("x", d => x(d.Year))
+          .attr("y", d => y(d[category]))
+          .attr("width", x.bandwidth())
+          .attr("height", d => height - y(d[category]))
+          .attr("fill", "#4caf50");
+  
+        bars.exit().remove();
+  
+        // Update chart title
+        title.text(`Enrollment Over Time – ${category} Students`);
+      }
+  
+      updateChart("Latino");
+    });
+  }
 
     setScene(0);
   </script>
