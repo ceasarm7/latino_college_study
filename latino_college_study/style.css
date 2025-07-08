@@ -34,15 +34,23 @@ h1 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 450px;
+  padding-bottom: 60px; /* Added space for axis label */
+  min-height: 500px;
 }
 
 #controls {
-  margin-bottom: 20px;
+  margin-bottom: 10px; /* Reduced margin for better spacing */
   text-align: center;
 }
 
 #controls select {
   padding: 5px 10px;
   font-size: 14px;
+}
+
+.axis-label {
+  font-size: 12px;
+  fill: #333;
+  text-anchor: middle;
+  pointer-events: none; 
 }
